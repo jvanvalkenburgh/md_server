@@ -470,7 +470,7 @@ class MetadataHandler(object):
     def make_content(self, res):
         if isinstance(res, list):
             return "\n".join(res)
-        elif isinstance(res, basestring):
+        elif isinstance(res, str):
             return "%s" % res
 
     def _get_ec2_versions(self, config):
