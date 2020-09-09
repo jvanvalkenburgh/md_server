@@ -485,7 +485,7 @@ class MetadataHandler(object):
             "privateIp": client_host,
             "instanceId": "i-12341ee8",
             "billingProducts": None,
-            "instanceType": "fungible_bmv",
+            "instanceType": "bmv",
             "accountId": None,
             "pendingTime": None,
             "imageId": "ami-383c1956",
