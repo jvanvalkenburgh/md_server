@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(name='mdserver',
       description='Simple metadata server',
-      version='0.5.0',
+      version='0.6.0',
       url='https://github.com/sjjf/md_server',
       author='Simon Fowler',
       author_email='simon.fowler@anu.edu.au',
@@ -19,9 +19,6 @@ setup(name='mdserver',
               'mdserver = mdserver.server:main',
           ],
       },
-      data_files=[
-          ('/etc/mdserver', ['etc/mdserver/mdserver.conf']),
-          ('/etc/default', ['etc/default/mdserver']),
-          ('/etc/init.d', ['etc/init/sysv/mdserver']),
-          ('/etc/systemd/system', ['etc/init/systemd/system/mdserver.service'])
-          ])
+      include_package_data=True,
+      python_requires='>=3.6'
+      )
