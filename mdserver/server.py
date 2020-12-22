@@ -177,11 +177,15 @@ class MetadataHandler(object):
         return config
 
     def _get_public_keys(self, config):
-        keys = [k.split('.')[1]
-                for k in config.keys()
-                if k.startswith('public-keys')]
-        for key in keys:
-            config['public_key_' + key] = config['public-keys.' + key]
+
+        _keys = filter(lambda x: x.startswith('public-keys'), config)
+        keys = map(lambda x: x.split('.')[1], _keys)
+        try:
+            for key in keys:
+                config['public_key_' + key] = config['public-keys.' + key]
+        except Exception as e:
+            logger.error("Exception %s: gettibng public keys", e)
+
         return config
 
     def gen_userdata(self):
@@ -261,6 +265,11 @@ class MetadataHandler(object):
             'ec2_versions',
         ])
 
+    def gen_local_ipv4(self):
+        client_host = bottle.request.get('REMOTE_ADDR')
+        logger.debug("Getting service name for %s", client_host)
+        return self.make_content(client_host)
+
     def gen_service_name(self):
         client_host = bottle.request.get('REMOTE_ADDR')
         logger.debug("Getting service name for %s", client_host)
@@ -278,6 +287,34 @@ class MetadataHandler(object):
         logger.debug("Getting service version for %s", client_host)
         config = bottle.request.app.config
         return self.make_content(config['service.version'])
+
+    def gen_instance_identity(self):
+        client_host = bottle.request.get('REMOTE_ADDR')
+        logger.debug("Getting instance identity for %s", client_host)
+
+        # make list as we will also need to stub out pks
+        return self.make_content(["document", ])
+
+    def gen_instance_identity_document(self):
+        client_host = bottle.request.get('REMOTE_ADDR')
+        logger.debug("Getting instance identity for %s", client_host)
+        iid = "i-%s" % client_host
+        return {
+            "privateIp": client_host,
+            "instanceId": "i-12341ee8",
+            "billingProducts": None,
+            "instanceType": "bmv",
+            "accountId": None,
+            "pendingTime": None,
+            "imageId": "ami-383c1956",
+            "kernelId": None,
+            "ramdiskId": None,
+            "architecture": "x86_64",
+            "region": "ap-northeast-1",  # <- region
+            "version": "2010-08-31",
+            "availabilityZone": "ap-northeast-1c",
+            "devpayProductCodes": None
+        }
 
     def gen_ec2_versions(self):
         client_host = bottle.request.get('REMOTE_ADDR')
@@ -335,7 +372,7 @@ def main():
     app.config['service.name'] = "mdserver"
     app.config['service.type'] = "mdserver"
     app.config['service.version'] = VERSION
-    app.config['service.ec2_versions'] = "2009-04-04"
+    app.config['service.ec2_versions'] = "2009-04-04,latest"
     app.config['mdserver.password'] = None
     app.config['mdserver.hostname_prefix'] = 'vm'
     app.config['public-keys.default'] = "__NOT_CONFIGURED__"
@@ -435,12 +472,15 @@ def main():
         route(md_base + '/meta-data/', 'GET', mdh.gen_metadata)
         route(md_base + '/user-data', 'GET', mdh.gen_userdata)
         route(md_base + '/meta-data/hostname', 'GET', mdh.gen_hostname)
+        route(md_base + '/meta-data/local-hostname', 'GET', mdh.gen_hostname)
         route(md_base + '/meta-data/instance-id', 'GET', mdh.gen_instance_id)
         route(md_base + '/meta-data/public-keys/', 'GET', mdh.gen_public_keys)
         route(md_base + '/meta-data/public-keys/<key>/', 'GET',
               mdh.gen_public_key_dir)
         route((md_base + '/meta-data/public-keys/<key>/openssh-key'), 'GET',
               mdh.gen_public_key_file)
+        route(md_base + '/dynamic/instance-identity', 'GET', mdh.gen_instance_identity)
+        route(md_base + '/dynamic/instance-identity/document', 'GET', mdh.gen_instance_identity_document)
 
     # support for uploading instance data
     route('/instance-upload', 'POST', mdh.instance_upload)
